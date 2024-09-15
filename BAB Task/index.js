@@ -1,6 +1,5 @@
 const puppeteer = require("puppeteer");
 const cheerio = require("cheerio");
-
 const XLSX = require("xlsx");
 
 (async () => {
@@ -27,36 +26,32 @@ const XLSX = require("xlsx");
 
     const number = values["Membership Number"] || "";
     
+    
+    let city = "Not Available";
+    let region = "Not Available";
+    const cityRegionValue = values["City - Region"] || "";
+    if (cityRegionValue) {
+      const [cityValue, regionValue] = cityRegionValue.split('-').map(part => part.trim());
+      city = cityValue || "Not Available";
+      region = regionValue || "Not Available";
+    }
 
-    const city = values["City"] || "";
+    // Extract 
+    const emailElement = $(element).find(".info-box.has-action .info-details .info-value a");
+    const email = emailElement.length ? emailElement.attr("href").replace("mailto:", "").trim() : "Not Available";
 
-    const email = $(element).find(".info-box-wrapper .row");
-
-    const rows = $(element).find(".info-box-wrapper .row");
-
-    rows.each((index, row) => {
-      const anchor = $(row).find(
-        ".info-box.has-action .info-details .info-value a"
-      );
-
-      if (anchor.length) {
-        const href = anchor.attr("href");
-        if (href) {
-          const email = href.replace("mailto:", "").trim();
-          console.log(email);
-        } else {
-          console.log("No href attribute found.");
-        }
-      } else {
-        console.log("No anchor tag found.");
-      }
-    });
+    console.log(`Company Name: ${companyName}`);
+    console.log(`Membership Number: ${number}`);
+    console.log(`City: ${city}`);
+    console.log(`Region: ${region}`);
+    console.log(`Email: ${email}`);
 
     data.push({
       companyName,
       number,
       city,
-      email: email,
+      region,
+      email,
     });
   });
 
@@ -65,10 +60,8 @@ const XLSX = require("xlsx");
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Contractors Data");
   const excelFilePath = "data.xlsx";
-  // XLSX.writeFile(wb, excelFilePath);
+  // XLSX.writeFile(wb, excelFilePath); 
   console.log(`Excel file generated at ${excelFilePath}`);
-
-
 
   await browser.close();
 })();
