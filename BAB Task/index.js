@@ -1,6 +1,7 @@
 const puppeteer = require("puppeteer");
 const XLSX = require("xlsx");
 
+
 async function scrabber() {
   const browser = await puppeteer.launch({ headless: true });
   const page = await browser.newPage();
@@ -94,9 +95,11 @@ async function scrabber() {
   XLSX.utils.book_append_sheet(wb, ws, "Contractors Data");
 
   const filePath = "contractors_data.xlsx";
-  //  XLSX.writeFile(wb, filePath);
+   XLSX.writeFile(wb, filePath);
 
   console.log(`Excel saved ${filePath}`);
 }
 
 scrabber();
+
+
