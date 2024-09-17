@@ -1,15 +1,15 @@
 const puppeteer = require("puppeteer");
 const XLSX = require("xlsx");
 
-
 async function scrabber() {
   const browser = await puppeteer.launch({ headless: true });
   const page = await browser.newPage();
 
   const data = [];
   const DataForEx = [];
+
   for (let i = 1; i <= 10; i++) {
-    const url = `https://muqawil.org/en/contractors?page=${i}`;
+    const url = `https://muqawil.org/ar/contractors?page=${i}`;
     await page.goto(url, { waitUntil: "networkidle2" });
     const allContractors = await page.evaluate((i) => {
       const cardElement = document.querySelectorAll(".section-card");
@@ -21,7 +21,7 @@ async function scrabber() {
         if (detailsPage) {
           contractorDetails["page"] = i;
           contractorDetails["link"] = detailsPage.getAttribute("href");
-          contractorDetails["companyName"] = detailsPage.textContent.trim();
+          contractorDetails["Company Name"] = detailsPage.textContent.trim();
           console.log(detailsPage);
         }
         console.log(contractorDetails);
@@ -30,7 +30,7 @@ async function scrabber() {
       });
 
       const filteredContractors = contractors.filter((elm) => {
-        return elm.link && elm.companyName;
+        return elm.link && elm["Company Name"];
       });
       return filteredContractors;
     }, i);
@@ -40,15 +40,15 @@ async function scrabber() {
 
       const Contractor = await page.evaluate(() => {
         const requestedSelectors = {
-          "Membership Number": true,
-          City: true,
-          "Email ": true,
-          phone: true,
+          "رقم العضويه": "Membership Number",
+          "المدينة": "City",
+          "البريد الإلكترونى ": "Email",
+          "رقم الجوال": "Phone Number",
         };
         const contractorDetails = {};
 
         const detailsPage = document.querySelector(".card-title");
-        contractorDetails["companyName"] = detailsPage.textContent.trim();
+        contractorDetails["Company Name"] = detailsPage.textContent.trim();
 
         const infoBoxElements = document.querySelectorAll(
           ".info-box .info-details"
@@ -57,11 +57,17 @@ async function scrabber() {
         Array.from(infoBoxElements).map((infoBox) => {
           const name = infoBox.querySelector(".info-name").textContent;
           if (requestedSelectors[name]) {
-            contractorDetails[name] = infoBox
+            contractorDetails[requestedSelectors[name]] = infoBox
               .querySelector(".info-value")
               .textContent.trim();
           }
         });
+        const infoActivities = document.querySelectorAll(".list-item");
+
+        const Activities = Array.from(infoActivities).map((Activity) => {
+          return Activity.textContent.replace("\n", "");
+        });
+        contractorDetails["Activities"] = Activities;
 
         return contractorDetails;
       });
@@ -70,16 +76,18 @@ async function scrabber() {
 
     const res = allContractors.map((c) => {
       const contractor = data.find(
-        (cont) => cont.companyName === c.companyName
+        (cont) => cont["Company Name"] === c["Company Name"]
       );
       return { ...c, ...contractor };
     });
 
     const finalData = res.map(({ link, ...rest }) => {
+      rest.Activities = rest.Activities.join(",");
       DataForEx.push(rest);
       return rest;
     });
   }
+  console.log(DataForEx);
 
   // => => => Excel
   const ws = XLSX.utils.json_to_sheet(DataForEx);
@@ -90,16 +98,15 @@ async function scrabber() {
     { wch: 20 },
     { wch: 20 },
     { wch: 20 },
+    { wch: 70 },
   ];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Contractors Data");
 
   const filePath = "contractors_data.xlsx";
-   XLSX.writeFile(wb, filePath);
+  XLSX.writeFile(wb, filePath);
 
   console.log(`Excel saved ${filePath}`);
 }
 
 scrabber();
-
-
